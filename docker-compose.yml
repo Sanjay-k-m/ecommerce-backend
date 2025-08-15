@@ -1,0 +1,36 @@
+version: '3.9'
+
+services:
+  backend:
+    build: .
+    ports:
+      - '3000:3000'
+      - '5555:5555'
+    env_file:
+      - ./.env
+    environment:
+      # Overrides DATABASE_URL from .env only in Docker container
+      DATABASE_URL: postgresql://postgres:postgres@postgres:5432/postgres?schema=public
+    volumes:
+      - ./:/usr/src/app
+      # - /usr/src/app/node_modules
+    command: sh -c "npx prisma generate --schema=prisma/schema.sql.prisma && npx prisma migrate deploy --schema=prisma/schema.sql.prisma && pnpm run start:dev"
+    restart: unless-stopped
+    depends_on:
+      - postgres
+
+  postgres:
+    image: postgres:16
+    container_name: postgres_db
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: postgres
+    ports:
+      - '51213:5432'
+    volumes:
+      - pg_data:/var/lib/postgresql/data
+    restart: unless-stopped
+
+volumes:
+  pg_data:

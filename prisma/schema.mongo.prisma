@@ -1,0 +1,38 @@
+datasource db {
+  provider = "mongodb"
+  url      = env("DATABASE_URL")
+}
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+model User {
+  id                        String   @id @default(uuid()) @map("_id")
+  email                     String   @unique
+  username                  String?  @unique
+  password                  String
+  isEmailVerified           Boolean  @default(false)
+  roles                     String[] @default(["user"])
+  currentHashedRefreshToken String?
+  passwordResetToken        String?
+  passwordResetExpires      DateTime?
+  otp                       String?
+  otpExpiry                 DateTime?
+  lastLogin                 DateTime?
+  failedLoginAttempts       Int      @default(0)
+  status                    String   @default("active")
+  lastPasswordChange        DateTime?
+  twoFactorEnabled          Boolean  @default(false)
+  twoFactorSecret           String?
+  socialProvider            String?
+  socialId                  String?
+  loginIp                   String?
+  loginUserAgent            String?
+  previousPasswords         Json?    @default("[]")
+  securityQuestions         Json?    @default("[]")
+  mfaRecoveryCodes          Json?    @default("[]")
+  createdAt                 DateTime @default(now())
+  updatedAt                 DateTime @updatedAt
+  deletedAt                 DateTime?
+}

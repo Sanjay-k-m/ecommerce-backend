@@ -1,0 +1,25 @@
+{
+  "descriptions": {
+    "build": "Compile the NestJS backend to JavaScript",
+    "format": "Format all source and test files with Prettier",
+    "start": "Start NestJS in production mode",
+    "start:dev": "Start NestJS in development mode with file watching",
+    "start:debug": "Start NestJS in debug mode with file watching",
+    "start:prod": "Run compiled NestJS code from dist/",
+    "lint": "Run ESLint and auto-fix issues",
+    "test": "Run all Jest tests once",
+    "test:watch": "Run Jest tests in watch mode",
+    "test:cov": "Run tests and collect coverage report",
+    "test:debug": "Debug Jest tests using Node inspector",
+    "test:e2e": "Run end-to-end tests with Jest",
+    "sql:migrate:init": "First migration for SQL database (initial setup)",
+    "sql:migrate:dev": "Apply new SQL schema changes during development",
+    "sql:migrate:deploy": "Deploy SQL migrations in production",
+    "sql:studio": "Open Prisma Studio connected to SQL DB",
+    "sql:generate": "Regenerate Prisma Client for SQL schema",
+    "sql:reset": "Drop and recreate SQL DB (dev only)",
+    "mongo:generate": "Regenerate Prisma Client for MongoDB schema",
+    "mongo:push": "Push MongoDB schema changes (no migrations)",
+    "mongo:studio": "Open Prisma Studio connected to MongoDB"
+  }
+}

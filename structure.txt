@@ -1,0 +1,35 @@
+src/
+  auth/          <-- Authentication & Authorization (JWT, login, signup)
+    auth.module.ts
+    auth.service.ts
+    auth.controller.ts
+    jwt.strategy.ts
+  users/         <-- User management (profiles, roles)
+    users.module.ts
+    users.service.ts
+    users.controller.ts
+    user.entity.ts
+  products/      <-- Product catalog management
+    products.module.ts
+    products.service.ts
+    products.controller.ts
+    product.entity.ts
+  orders/        <-- Order processing and history
+    orders.module.ts
+    orders.service.ts
+    orders.controller.ts
+    order.entity.ts
+  cart/          <-- Shopping cart management
+    cart.module.ts
+    cart.service.ts
+    cart.controller.ts
+  payments/      <-- Payment processing integration
+    payments.module.ts
+    payments.service.ts
+    payments.controller.ts
+  common/        <-- Shared utilities, pipes, decorators, guards, DTOs
+    guards/
+    interceptors/
+    filters/
+    dto/
+  app.module.ts  <-- Root module that imports all other modules
