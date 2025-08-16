@@ -26,11 +26,14 @@ export class RolesGuard implements CanActivate {
     const request = context.switchToHttp().getRequest();
     const user = request.user;
 
-    if (!user || !user.role) {
+    if (!user || !user.roles) {
       throw new ForbiddenException('User role not found');
     }
 
-    const hasRole = requiredRoles.includes(user.role);
+    // eslint-disable-next-line @typescript-eslint/no-unsafe-call
+    const hasRole = user.roles.some((role: string) =>
+      requiredRoles.includes(role),
+    );
     if (!hasRole) {
       throw new ForbiddenException('Insufficient role permissions');
     }

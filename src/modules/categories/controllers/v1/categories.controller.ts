@@ -13,7 +13,6 @@ import {
 import { CategoriesService } from '../../services/categories.service';
 import { CreateCategoryDto } from '../../dto/v1/create-category.dto';
 import { UpdateCategoryDto } from '../../dto/v1/update-category.dto';
-// import { Roles } from '../../../common/security/decorators/roles.decorator';
 import {
   ApiTags,
   ApiOperation,
@@ -24,6 +23,7 @@ import {
 import { Roles } from 'src/common/security/decorators/roles.decorator';
 import { JwtAuthGuard } from 'src/common/security/guards/jwt-auth.guard';
 import { RolesGuard } from 'src/common/security/guards/roles.guard';
+import { CategoryIdParamDto } from '../../dto/v1';
 
 @ApiTags('Categories')
 @Controller('categories')
@@ -47,9 +47,8 @@ export class CategoriesController {
   @ApiOperation({ summary: 'Create a new category (Admin)' })
   @ApiResponse({ status: 201, description: 'Category created successfully' })
   @ApiBadRequestResponse({ description: 'Invalid input data' })
-  @ApiResponse({ status: 403, description: 'Forbidden' })
-  async create(@Body() createCategoryDto: CreateCategoryDto) {
-    return this.categoriesService.create(createCategoryDto);
+  async create(@Body() dto: CreateCategoryDto) {
+    return this.categoriesService.create(dto);
   }
 
   @Patch(':id')
@@ -59,13 +58,11 @@ export class CategoriesController {
   @ApiOperation({ summary: 'Update a category by ID (Admin)' })
   @ApiResponse({ status: 200, description: 'Category updated successfully' })
   @ApiBadRequestResponse({ description: 'Invalid input data' })
-  @ApiResponse({ status: 403, description: 'Forbidden' })
-  @ApiResponse({ status: 404, description: 'Category not found' })
   async update(
-    @Param('id') id: string,
-    @Body() updateCategoryDto: UpdateCategoryDto,
+    @Param() params: CategoryIdParamDto,
+    @Body() dto: UpdateCategoryDto,
   ) {
-    return this.categoriesService.update(id, updateCategoryDto);
+    return this.categoriesService.update(params.id, dto);
   }
 
   @Delete(':id')
@@ -73,12 +70,27 @@ export class CategoriesController {
   @Roles('admin')
   @ApiBearerAuth()
   @HttpCode(HttpStatus.NO_CONTENT)
-  @ApiOperation({ summary: 'Delete a category by ID (Admin)' })
+  @ApiOperation({ summary: 'Soft delete a category by ID (Admin)' })
   @ApiResponse({ status: 204, description: 'Category deleted successfully' })
-  @ApiBadRequestResponse({ description: 'Invalid input data' })
-  @ApiResponse({ status: 403, description: 'Forbidden' })
-  @ApiResponse({ status: 404, description: 'Category not found' })
-  async remove(@Param('id') id: string) {
-    return this.categoriesService.remove(id);
+  async remove(@Param() params: CategoryIdParamDto) {
+    await this.categoriesService.remove(params.id);
+  }
+
+  @Patch(':id/deactivate')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles('admin')
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'Deactivate a category by ID (Admin)' })
+  async deactivate(@Param() params: CategoryIdParamDto) {
+    return this.categoriesService.deactivate(params.id);
+  }
+
+  @Patch(':id/activate')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles('admin')
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'Activate a category by ID (Admin)' })
+  async activate(@Param() params: CategoryIdParamDto) {
+    return this.categoriesService.activate(params.id);
   }
 }

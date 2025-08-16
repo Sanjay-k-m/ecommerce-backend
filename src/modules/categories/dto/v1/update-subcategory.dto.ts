@@ -1,5 +1,6 @@
-import { IsString, IsOptional, MinLength } from 'class-validator';
+import { IsString, IsOptional, MinLength, IsEnum } from 'class-validator';
 import { ApiProperty } from '@nestjs/swagger';
+import { CategoryStatus } from '@prisma/client';
 
 export class UpdateSubcategoryDto {
   @ApiProperty({
@@ -20,4 +21,14 @@ export class UpdateSubcategoryDto {
   @IsString()
   @IsOptional()
   description?: string;
+
+  @ApiProperty({
+    description: 'Status of the subcategory',
+    example: 'active',
+    required: false,
+    enum: ['active', 'inactive', 'deleted'],
+  })
+  @IsOptional()
+  @IsEnum(CategoryStatus)
+  status?: CategoryStatus;
 }

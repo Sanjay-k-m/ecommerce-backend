@@ -1,46 +1,44 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import { Injectable } from '@nestjs/common';
 import { PrismaService } from '../../../common/providers/prisma.service';
-import { CreateCategoryDto } from '../dto/v1/create-category.dto';
-import { UpdateCategoryDto } from '../dto/v1/update-category.dto';
+import { Prisma, Category } from '@prisma/client';
 
 @Injectable()
 export class CategoriesRepository {
   constructor(private readonly prisma: PrismaService) {}
 
-  async findAll() {
+  async findAll(args?: Prisma.CategoryFindManyArgs): Promise<Category[]> {
     return this.prisma.category.findMany({
       include: { subcategories: true },
+      ...args,
     });
   }
 
-  async create(createCategoryDto: CreateCategoryDto) {
-    return this.prisma.category.create({
-      data: createCategoryDto,
-    });
+  async create(data: Prisma.CategoryCreateInput): Promise<Category> {
+    return this.prisma.category.create({ data });
   }
 
-  async findOne(id: string) {
-    const category = await this.prisma.category.findUnique({
-      where: { id },
-    });
-    if (!category) {
-      throw new NotFoundException('Category not found');
-    }
-    return category;
+  async findOne(id: string): Promise<Category | null> {
+    return this.prisma.category.findUnique({ where: { id } });
   }
 
-  async update(id: string, updateCategoryDto: UpdateCategoryDto) {
-    await this.findOne(id);
+  async update(
+    id: string,
+    data: Prisma.CategoryUpdateInput,
+  ): Promise<Category> {
     return this.prisma.category.update({
       where: { id },
-      data: updateCategoryDto,
+      data,
     });
   }
 
-  async remove(id: string) {
-    await this.findOne(id);
-    return this.prisma.category.delete({
+  async softDelete(id: string): Promise<Category> {
+    return this.prisma.category.update({
       where: { id },
+      data: { status: 'deleted', deletedAt: new Date() },
     });
+  }
+
+  async hardDelete(id: string): Promise<Category> {
+    return this.prisma.category.delete({ where: { id } });
   }
 }

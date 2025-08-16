@@ -26,6 +26,7 @@ enum RoleName {
 
 enum CategoryStatus {
   active
+  inactive
   deleted
 }
 
