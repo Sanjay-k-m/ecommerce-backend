@@ -1,109 +1,116 @@
-/* eslint-disable @typescript-eslint/no-unused-vars */
-
 import {
   Injectable,
   ConflictException,
   UnauthorizedException,
   BadRequestException,
-  NotFoundException,
   Logger,
 } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 import * as bcrypt from 'bcrypt';
 import * as crypto from 'crypto';
-
 import { UsersService } from '../../users/users.service';
-import { User } from '@prisma/client';
+import { User, RoleName } from '@prisma/client';
 import { JwtPayload } from '../../../interfaces/auth.interface';
 import { MailService } from 'src/common/providers/mail-provider.service';
 import { appConfig, jwtConfig } from 'src/config';
 
 @Injectable()
 export class AuthService {
+  private readonly logger = new Logger(AuthService.name);
+
   constructor(
     private readonly usersService: UsersService,
     private readonly jwtService: JwtService,
     private readonly mailService: MailService,
   ) {}
 
-  /** Register new user with OTP (stored in DB temporarily) */
-  /** Register new user with OTP (supports unverified user updates) */
   async registerRequest(email: string, password: string): Promise<void> {
     const user = await this.usersService.findByEmail(email);
     const otp = Math.floor(100000 + Math.random() * 900000).toString();
     const hashedOtp = await bcrypt.hash(otp, 10);
 
     if (user && user.isEmailVerified) {
-      // Fully registered & verified
       throw new ConflictException('Email already registered');
     }
 
     if (user && !user.isEmailVerified) {
-      // User exists but not verified → update OTP & password
       await this.usersService.updateUser(user.id, {
         otp: hashedOtp,
-        otpExpiry: new Date(Date.now() + 10 * 60 * 1000), // 10 min
-        password,
+        otpExpiry: new Date(Date.now() + 10 * 60 * 1000),
+        password, // raw password
       });
     } else {
-      // New user → create
+      const username = await this.usersService.generateUniqueUsername(email);
       await this.usersService.createUser({
         email,
-        password,
-        roles: ['user'],
+        password, // raw password
         isEmailVerified: false,
         otp: hashedOtp,
         otpExpiry: new Date(Date.now() + 10 * 60 * 1000),
+        status: 'active',
+        username,
+        previousPasswords: [], // UsersService will hash password and add here
+        securityQuestions: [],
+        mfaRecoveryCodes: [],
       });
     }
 
-    // Send OTP email
-    await this.mailService.sendMail(email, 'OTP for registration', otp);
+    await this.mailService.sendMail(
+      email,
+      'OTP for Registration',
+      `Your OTP is: ${otp}`,
+    );
   }
 
-  /** Verify OTP and activate user */
   async verifyOtpAndRegister(email: string, otp: string): Promise<void> {
     const user = await this.usersService.findByEmail(email);
     if (!user) throw new BadRequestException('No pending registration');
 
     if (!user.otp || !user.otpExpiry || user.otpExpiry < new Date())
-      throw new BadRequestException('OTP expired');
+      throw new BadRequestException('OTP expired or invalid');
 
     const isValidOtp = await bcrypt.compare(otp, user.otp);
     if (!isValidOtp) throw new BadRequestException('Invalid OTP');
 
-    // Mark user as verified and remove OTP fields
+    await this.usersService.assignRole(user.id, RoleName.user);
     await this.usersService.updateUser(user.id, {
       isEmailVerified: true,
       otp: null,
       otpExpiry: null,
+      status: 'active',
     });
   }
 
-  /** Validate user credentials */
   async validateUser(
     email: string,
     password: string,
   ): Promise<Omit<User, 'password'> | null> {
     const user = await this.usersService.findByEmail(email);
-    if (!user) return null;
+    if (!user || user.status !== 'active') return null;
 
     const isPasswordValid = await bcrypt.compare(password, user.password);
-    if (!isPasswordValid) return null;
+    if (!isPasswordValid) {
+      await this.usersService.incrementFailedLoginAttempts(user.id);
+      return null;
+    }
 
+    await this.usersService.updateUser(user.id, { failedLoginAttempts: 0 });
+    // eslint-disable-next-line prettier/prettier, @typescript-eslint/no-unused-vars
     const { password: _, ...result } = user;
     return result;
   }
 
-  /** Login user and return JWT tokens */
   async login(email: string, password: string) {
     const user = await this.validateUser(email, password);
     if (!user) throw new UnauthorizedException('Invalid credentials');
 
+    const userRoles = await this.usersService.getUserRoles(user.id);
+    const roleNames = userRoles.map((role) => role.name);
+
     const payload: JwtPayload = {
       sub: user.id,
       email: user.email,
-      roles: user.roles,
+      roles: roleNames,
     };
 
     const access_token = this.jwtService.sign(payload, {
@@ -112,13 +119,13 @@ export class AuthService {
     });
 
     const refresh_token = this.generateRefreshToken(user);
-    await this.usersService.setCurrentRefreshToken(user.id, refresh_token);
+    const hashedRefreshToken = await bcrypt.hash(refresh_token, 10);
+    await this.usersService.setCurrentRefreshToken(user.id, hashedRefreshToken);
     await this.usersService.updateLoginInfo(user.id);
 
     return { access_token, refresh_token };
   }
 
-  /** Generate JWT refresh token */
   generateRefreshToken(user: Omit<User, 'password'>): string {
     const { refreshToken } = jwtConfig();
     return this.jwtService.sign(
@@ -130,27 +137,29 @@ export class AuthService {
     );
   }
 
-  /** Logout user by clearing refresh token */
   async logout(userId: string): Promise<void> {
     await this.usersService.removeRefreshToken(userId);
   }
 
-  /** Refresh tokens if refresh token is valid */
   async refreshTokens(userId: string, refreshToken: string) {
     const user = await this.usersService.findById(userId);
-    if (!user || !user.currentHashedRefreshToken)
-      throw new UnauthorizedException();
+    if (!user || !user.currentHashedRefreshToken || user.status !== 'active')
+      throw new UnauthorizedException('Invalid user or session');
 
     const isRefreshTokenValid = await bcrypt.compare(
       refreshToken,
       user.currentHashedRefreshToken,
     );
-    if (!isRefreshTokenValid) throw new UnauthorizedException();
+    if (!isRefreshTokenValid)
+      throw new UnauthorizedException('Invalid refresh token');
+
+    const userRoles = await this.usersService.getUserRoles(userId);
+    const roleNames = userRoles.map((role) => role.name);
 
     const payload: JwtPayload = {
       sub: user.id,
       email: user.email,
-      roles: user.roles,
+      roles: roleNames,
     };
 
     const access_token = this.jwtService.sign(payload, {
@@ -159,25 +168,29 @@ export class AuthService {
     });
 
     const new_refresh_token = this.generateRefreshToken(user);
-    await this.usersService.setCurrentRefreshToken(user.id, new_refresh_token);
+    const hashedNewRefreshToken = await bcrypt.hash(new_refresh_token, 10);
+    await this.usersService.setCurrentRefreshToken(
+      user.id,
+      hashedNewRefreshToken,
+    );
 
     return { access_token, refresh_token: new_refresh_token };
   }
 
-  /** Request password reset */
   async requestPasswordReset(email: string): Promise<void> {
     const user = await this.usersService.findByEmail(email);
-    if (!user) return; // silently ignore
+    if (!user || user.status !== 'active') return;
 
     const resetToken = crypto.randomBytes(32).toString('hex');
     const hashedResetToken = await bcrypt.hash(resetToken, 10);
-    const expiry = new Date(Date.now() + 3600 * 1000).getTime();
+    const expiry = new Date(Date.now() + 3600 * 1000);
+
     await this.usersService.setPasswordResetToken(
       user.id,
       hashedResetToken,
       expiry,
     );
-    console.log('refresh token for user:', user.id, resetToken);
+
     const { frontendUrl } = appConfig();
     const resetUrl = `${frontendUrl}/reset-password?token=${resetToken}`;
     await this.mailService.sendMail(
@@ -188,16 +201,12 @@ export class AuthService {
     );
   }
 
-  /** Reset password using token */
   async resetPassword(token: string, newPassword: string) {
-    // Find user(s) by matching hashed reset token
     const users = await this.usersService.findByResetToken(token);
     if (!users.length)
       throw new BadRequestException('Invalid or expired token');
 
     const user = users[0];
-    console.log('Resetting password for user:', user.id);
-
     await this.usersService.updatePassword(user.id, newPassword);
     await this.usersService.clearPasswordResetToken(user.id);
   }

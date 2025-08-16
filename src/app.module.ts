@@ -7,12 +7,14 @@ import { AppService } from './app.service';
 import { AuthModule } from './modules/auth/auth.module';
 import { UsersModule } from './modules/users/users.module';
 import { ThrottlerCustomModule } from './common/throttler/throttler.module';
+import { CategoriesModule } from './modules/categories/categories.module';
 @Module({
   imports: [
     ConfigModule.forRoot({ isGlobal: true }), // global .env config
     ThrottlerCustomModule.forRoot(), // Our throttler module
     AuthModule,
     UsersModule,
+    CategoriesModule,
   ],
   controllers: [AppController],
   providers: [AppService],

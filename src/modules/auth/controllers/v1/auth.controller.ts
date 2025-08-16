@@ -20,7 +20,7 @@ import {
 @ApiTags('auth')
 @Controller({
   path: 'auth',
-  version: '1', // <-- Set version here
+  version: '1',
 })
 export class AuthControllerV1 {
   constructor(private readonly authService: AuthService) {}
@@ -30,6 +30,7 @@ export class AuthControllerV1 {
     status: 200,
     description: 'OTP sent to email for verification',
   })
+  @ApiResponse({ status: 409, description: 'Email already registered' })
   @Post('register-request')
   async registerRequest(
     @Body() dto: RegisterDto,
@@ -41,6 +42,12 @@ export class AuthControllerV1 {
     };
   }
 
+  @ApiOperation({ summary: 'Verify OTP and complete registration' })
+  @ApiResponse({
+    status: 200,
+    description: 'Registration completed successfully',
+  })
+  @ApiResponse({ status: 400, description: 'Invalid or expired OTP' })
   @Post('register-verify')
   async registerVerify(
     @Body() dto: VerifyOtpDto,
@@ -54,6 +61,7 @@ export class AuthControllerV1 {
     status: 200,
     description: 'Returns access and refresh tokens',
   })
+  @ApiResponse({ status: 401, description: 'Invalid credentials' })
   @Post('login')
   async login(
     @Body() dto: LoginDto,
@@ -78,6 +86,7 @@ export class AuthControllerV1 {
     status: 200,
     description: 'Returns new access and refresh tokens',
   })
+  @ApiResponse({ status: 401, description: 'Invalid refresh token' })
   @Post('refresh')
   async refresh(
     @Body() dto: RefreshTokenDto,
@@ -102,6 +111,7 @@ export class AuthControllerV1 {
 
   @ApiOperation({ summary: 'Reset password' })
   @ApiResponse({ status: 200, description: 'Password reset successful' })
+  @ApiResponse({ status: 400, description: 'Invalid or expired token' })
   @Post('reset-password')
   async resetPassword(
     @Body() dto: ResetPasswordDto,
