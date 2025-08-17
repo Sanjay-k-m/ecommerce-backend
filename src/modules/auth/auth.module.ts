@@ -11,7 +11,7 @@ import { jwtConfig } from 'src/config';
 import { UsersService } from '../users/users.service';
 import { PrismaService } from 'src/common/providers/prisma.service';
 import { AuthControllerV1 } from './controllers/v1';
-import { AuthControllerV2 } from './controllers/v2';
+// import { AuthControllerV2 } from './controllers/v2';
 @Module({
   imports: [
     UsersModule,
@@ -30,7 +30,7 @@ import { AuthControllerV2 } from './controllers/v2';
       inject: [ConfigService],
     }),
   ],
-  controllers: [AuthControllerV1, AuthControllerV2],
+  controllers: [AuthControllerV1],
   providers: [AuthService, JwtStrategy, UsersService, PrismaService],
   exports: [AuthService],
 })

@@ -6,6 +6,7 @@ import {
 import * as bcrypt from 'bcrypt';
 import { UserRepository } from './repositories/user.repository';
 import { Prisma, User, RoleName } from '@prisma/client';
+import { UpdateProfileDto, UpdateRoleDto } from './dto/v1';
 
 @Injectable()
 export class UsersService {
@@ -115,6 +116,7 @@ export class UsersService {
     }
     return this.userRepo.update(userId, data);
   }
+
   async clearPasswordResetToken(userId: string) {
     return this.userRepo.update(userId, {
       passwordResetToken: null,
@@ -147,6 +149,7 @@ export class UsersService {
   async incrementFailedLoginAttempts(userId: string) {
     return this.userRepo.incrementFailedLoginAttempts(userId);
   }
+
   async generateUniqueUsername(email: string): Promise<string> {
     const namePart = email.split('@')[0];
     let username: string;
@@ -155,9 +158,65 @@ export class UsersService {
     do {
       const randomNumber = Math.floor(Math.random() * 10000);
       username = `${namePart}${randomNumber}`;
-      exists = await this.userRepo.findByUsername(username); // returns User | null
+      exists = await this.userRepo.findByUsername(username);
     } while (exists);
 
     return username;
+  }
+
+  // New methods for user management endpoints
+  async getProfile(userId: string): Promise<User> {
+    const user = await this.userRepo.findById(userId);
+    if (!user || user.status === 'deleted') {
+      throw new NotFoundException('User not found');
+    }
+    return user;
+  }
+
+  async updateProfile(userId: string, dto: UpdateProfileDto): Promise<User> {
+    const user = await this.userRepo.findById(userId);
+    if (!user || user.status === 'deleted') {
+      throw new NotFoundException('User not found');
+    }
+    if (dto.username) {
+      const existingUser = await this.userRepo.findByUsername(dto.username);
+      if (existingUser && existingUser.id !== userId) {
+        throw new BadRequestException('Username already taken');
+      }
+    }
+    return this.userRepo.update(userId, {
+      firstName: dto.firstName,
+      lastName: dto.lastName,
+      username: dto.username,
+      dob: dto.dob ? new Date(dto.dob) : undefined,
+      phone: dto.phone,
+      updatedAt: new Date(),
+    });
+  }
+
+  async findAll(): Promise<User[]> {
+    return this.userRepo.findMany({
+      where: { status: { not: 'deleted' } },
+      include: { userRoles: { include: { role: true } } },
+    });
+  }
+
+  async updateRole(userId: string, dto: UpdateRoleDto): Promise<User> {
+    const user = await this.userRepo.findById(userId);
+
+    if (!user || user.status === 'deleted') {
+      throw new NotFoundException('User not found');
+    }
+
+    // Clear existing roles
+    await this.userRepo.deleteManyUserRoles({ userId });
+
+    // Assign new roles
+    for (const roleName of dto.roles) {
+      await this.userRepo.assignRole(userId, roleName as RoleName);
+    }
+
+    // Return updated user with roles
+    return (await this.userRepo.findById(userId))!;
   }
 }

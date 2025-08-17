@@ -113,4 +113,14 @@ export class UserRepository {
       passwordResetExpires: null,
     });
   }
+  async findMany(args: Prisma.UserFindManyArgs): Promise<User[]> {
+    return this.prisma.user.findMany({
+      ...args,
+      include: { userRoles: { include: { role: true } } },
+    });
+  }
+
+  async deleteManyUserRoles(where: Prisma.UserRoleWhereInput): Promise<void> {
+    await this.prisma.userRole.deleteMany({ where });
+  }
 }
