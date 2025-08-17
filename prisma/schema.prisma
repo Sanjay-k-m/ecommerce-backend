@@ -32,6 +32,7 @@ enum CategoryStatus {
 
 enum ProductStatus {
   active
+  inactive
   deleted
 }
 
