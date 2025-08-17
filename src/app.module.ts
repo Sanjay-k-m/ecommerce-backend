@@ -10,6 +10,7 @@ import { ThrottlerCustomModule } from './common/throttler/throttler.module';
 import { CategoriesModule } from './modules/categories/categories.module';
 import { ProductsModule } from './modules/products/products.module';
 import { CartModule } from './modules/cart/cart.module';
+import { InventoryModule } from './modules/inventory/inventory.module';
 @Module({
   imports: [
     ConfigModule.forRoot({ isGlobal: true }), // global .env config
@@ -19,6 +20,7 @@ import { CartModule } from './modules/cart/cart.module';
     CategoriesModule,
     ProductsModule,
     CartModule,
+    InventoryModule,
   ],
   controllers: [AppController],
   providers: [AppService],
