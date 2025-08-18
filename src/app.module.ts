@@ -13,6 +13,7 @@ import { CartModule } from './modules/cart/cart.module';
 import { InventoryModule } from './modules/inventory/inventory.module';
 import { OrdersModule } from './modules/orders/orders.module';
 import { PaymentsModule } from './modules/payments/payments.module';
+import { AddressesModule } from './modules/addresses/addresses.module';
 @Module({
   imports: [
     ConfigModule.forRoot({ isGlobal: true }), // global .env config
@@ -25,6 +26,7 @@ import { PaymentsModule } from './modules/payments/payments.module';
     InventoryModule,
     OrdersModule,
     PaymentsModule,
+    AddressesModule,
   ],
   controllers: [AppController],
   providers: [AppService],
