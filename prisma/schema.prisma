@@ -71,6 +71,17 @@ enum ShippingStatus {
   cancelled
 }
 
+enum AddressType {
+  shipping
+  billing
+}
+
+enum MediaType {
+  image
+  video
+}
+
+
 // --------------------
 // User & Auth
 // --------------------
@@ -143,18 +154,31 @@ model UserRole {
 // Address
 // --------------------
 model Address {
-  id         String   @id @default(auto()) @map("_id") @db.ObjectId
-  userId     String   @db.ObjectId
-  user       User     @relation(fields: [userId], references: [id])
-  street     String
-  city       String
-  state      String
-  country    String
-  zipCode    String
-  shipping   Shipping[]
-  createdAt  DateTime @default(now())
-  updatedAt  DateTime @updatedAt
-  deletedAt  DateTime?
+  id               String      @id @default(auto()) @map("_id") @db.ObjectId
+  userId           String      @db.ObjectId
+  user             User        @relation(fields: [userId], references: [id])
+  firstName        String      // Recipient first name
+  lastName         String      // Recipient last name
+  phone            String?     // Optional phone for delivery
+  street           String
+  addressLine2     String?     // Optional for apt, suite, etc.
+  city             String
+  state            String
+  country          String
+  zipCode          String
+  latitude         Float?      // GPS location
+  longitude        Float?      // GPS location
+  type             AddressType @default(shipping) // Address purpose
+  isDefault        Boolean     @default(false) // Default address for checkout
+  deliveryInstructions String?  // Delivery notes, e.g., "Leave at front door"
+  label            String?     // User-friendly name, e.g., "Home"
+  // isValidated    Boolean?    // Tracks address validation (optional)
+  // geocodedAt     DateTime?   // Tracks GPS update time (optional)
+  // taxZone        String?     // For tax calculations (optional)
+  shipping         Shipping[]
+  createdAt        DateTime    @default(now())
+  updatedAt        DateTime    @updatedAt
+  deletedAt        DateTime?
 }
 
 // --------------------
@@ -336,7 +360,7 @@ model Return {
 model Media {
   id        String   @id @default(auto()) @map("_id") @db.ObjectId
   url       String
-  type      String
+  type      MediaType
   productId String?  @db.ObjectId
   product   Product? @relation(fields: [productId], references: [id])
   userId    String?  @db.ObjectId

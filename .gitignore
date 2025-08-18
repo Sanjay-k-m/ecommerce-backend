@@ -67,3 +67,5 @@ node_modules
 
 .pnpm-store
 .pnpm-store/*
+
+uploads/*
