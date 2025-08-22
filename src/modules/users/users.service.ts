@@ -31,7 +31,7 @@ export class UsersService {
   }
 
   async findByEmail(email: string) {
-    return this.userRepo.findByEmail(email);
+    return await this.userRepo.findByEmail(email);
   }
 
   async findById(id: string) {

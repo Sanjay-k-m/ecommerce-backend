@@ -7,7 +7,7 @@ export class UserRepository {
   constructor(private readonly prisma: PrismaService) {}
 
   async findByEmail(email: string): Promise<User | null> {
-    return this.prisma.user.findUnique({
+    return await this.prisma.user.findUnique({
       where: { email },
       include: { userRoles: { include: { role: true } } },
     });

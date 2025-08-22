@@ -1,9 +1,10 @@
 import { Controller, Post, Body, UseGuards, Req } from '@nestjs/common';
 import { AuthService } from '../../services/auth.service';
 import { JwtAuthGuard } from 'src/common/security/guards/jwt-auth.guard';
-import { AuthenticatedUser } from 'src/interfaces/auth.interface';
+import { AuthenticatedUser } from 'src/modules/auth/interfaces/auth.interface';
 import {
   LoginDto,
+  LoginResponseDto,
   RefreshTokenDto,
   RegisterDto,
   RequestPasswordResetDto,
@@ -16,6 +17,7 @@ import {
   ApiOperation,
   ApiResponse,
 } from '@nestjs/swagger';
+import { LoginResponse } from '../../interfaces/auth-response.interface';
 
 @ApiTags('auth')
 @Controller({
@@ -49,24 +51,25 @@ export class AuthControllerV1 {
   })
   @ApiResponse({ status: 400, description: 'Invalid or expired OTP' })
   @Post('register-verify')
-  async registerVerify(
-    @Body() dto: VerifyOtpDto,
-  ): Promise<{ message: string }> {
-    await this.authService.verifyOtpAndRegister(dto.email, dto.otp);
-    return { message: 'Registration completed successfully.' };
+  async registerVerify(@Body() dto: VerifyOtpDto): Promise<object> {
+    return await this.authService.verifyOtpAndRegister(dto.email, dto.otp);
   }
 
   @ApiOperation({ summary: 'User login' })
   @ApiResponse({
     status: 200,
     description: 'Returns access and refresh tokens',
+    type: LoginResponseDto,
   })
   @ApiResponse({ status: 401, description: 'Invalid credentials' })
   @Post('login')
-  async login(
-    @Body() dto: LoginDto,
-  ): Promise<{ access_token: string; refresh_token: string }> {
-    return this.authService.login(dto.email, dto.password);
+  async login(@Body() dto: LoginDto): Promise<LoginResponse> {
+    const tokens = await this.authService.login(dto);
+    return {
+      status: 'success',
+      message: 'Login successful.',
+      data: { tokens },
+    };
   }
 
   @ApiBearerAuth()
@@ -115,8 +118,8 @@ export class AuthControllerV1 {
   @Post('reset-password')
   async resetPassword(
     @Body() dto: ResetPasswordDto,
-  ): Promise<{ message: string }> {
+  ): Promise<{ status: string; message: string }> {
     await this.authService.resetPassword(dto.token, dto.newPassword);
-    return { message: 'Password reset successful.' };
+    return { status: 'success', message: 'Password reset successful.' };
   }
 }
