@@ -5,7 +5,7 @@ import {
   // IsOptional
 } from 'class-validator';
 
-export class LoginDto {
+export class LoginRequestDto {
   @ApiProperty({
     example: 'user@example.com',
     description: 'User email address',

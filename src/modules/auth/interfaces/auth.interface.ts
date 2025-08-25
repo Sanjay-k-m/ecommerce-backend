@@ -11,6 +11,6 @@ export interface AuthenticatedUser {
 }
 
 export type AuthTokens = {
-  access_token: string;
-  refresh_token: string;
+  accessToken: string;
+  refreshToken: string;
 };

@@ -6,6 +6,7 @@ import { setupHelmet } from './setup-helmet';
 import { setupGlobalValidation } from './setup-global-validation';
 import { setupLoggingInterceptor } from './setup-logging-interceptor';
 import { setupCompression } from './setup-compression';
+import { setupGlobalExceptionFilter } from './setup-global-exception-filter';
 
 export function setupApp(app: INestApplication) {
   setupVersioning(app);
@@ -15,4 +16,5 @@ export function setupApp(app: INestApplication) {
   setupGlobalValidation(app);
   setupLoggingInterceptor(app);
   setupCompression(app);
+  setupGlobalExceptionFilter(app);
 }

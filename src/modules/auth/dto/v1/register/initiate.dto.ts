@@ -7,7 +7,7 @@ import {
   // IsBoolean,
 } from 'class-validator';
 
-export class RegisterDto {
+export class RegisterInitiateRequestDto {
   @ApiProperty({
     example: 'user@example.com',
     description: 'User email address',

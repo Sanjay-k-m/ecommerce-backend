@@ -2,9 +2,14 @@ import { ApiResponse } from 'src/interfaces/interface';
 import { AuthTokens } from './auth.interface';
 
 export type LoginResponse = ApiResponse<{ tokens: AuthTokens }>;
-export type RegisterResponse = ApiResponse<{ tokens: AuthTokens }>;
-export type RefreshTokenResponse = ApiResponse<{ tokens: AuthTokens }>;
-export type RequestPasswordResetResponse = ApiResponse<{ message: string }>;
-export type ResetPasswordResponse = ApiResponse<{ message: string }>;
-// export type TwoFactorResponse = ApiResponse<{ secret?: string }>;
-// export type VerifyOtpResponse = ApiResponse<{ tokens?: AuthTokens }>;
+export type RefreshTokenResponse = ApiResponse<{
+  tokens: AuthTokens;
+}>;
+export type RegisterConfirmationResponse = ApiResponse<{ tokens?: AuthTokens }>;
+export type RegisterInitiationResponse = ApiResponse<{ message: string }>;
+export type ForgotPasswordInitiationResponse = ApiResponse<{ message: string }>;
+export type ForgotPasswordConfirmationResponse = ApiResponse<{
+  message: string;
+}>;
+
+// export type TwoFactorSetupResponse = ApiResponse<{ secret?: string }>;
